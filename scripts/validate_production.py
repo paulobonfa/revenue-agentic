@@ -43,6 +43,14 @@ def stress(rounds=20_000):
 
 
 def main():
+    readme_validation = subprocess.run(
+        [sys.executable, os.path.join(ROOT, "scripts/validate_readme.py")],
+        cwd=ROOT,
+    )
+    if readme_validation.returncode != 0:
+        print("PRODUCTION GATE: FAIL (README render-safety)")
+        return 1
+
     skill_validation = subprocess.run(
         [sys.executable, os.path.join(ROOT, "skills/revenue-mechanics/scripts/validate_skill.py")],
         cwd=ROOT,
