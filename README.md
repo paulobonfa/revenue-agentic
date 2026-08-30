@@ -1,182 +1,284 @@
-# Revenue Agentic
+<h1 align="center">Revenue Agentic</h1>
 
-**Agente de análise e planejamento de receita, powered by Revenue Mechanics / Equações Bonfarianas 2.1.0-rc1.**
+<p align="center">
+  <strong>Análise, diagnóstico e planejamento reverso de receita com IA — sem delegar a matemática ao LLM.</strong>
+</p>
 
-**Revenue Agentic** é o produto agentic deste repositório. **Revenue Mechanics** é seu motor matemático determinístico: o agente interpreta o problema e comunica a decisão; a skill governa o workflow; o código executa os cálculos e os gates de confiabilidade.
+<p align="center">
+  Powered by <strong>Revenue Mechanics / Equações Bonfarianas</strong>
+</p>
 
-A versão 2.0 substitui a ideia de uma coleção de fórmulas isoladas por uma pequena **álgebra geradora**. O objetivo é permitir que um gestor de tráfego, CRO, CRM, vendas ou C-level parta de um resultado e o decomponha até as variáveis que o produziram — ou faça o caminho inverso e calcule o que precisa mudar para atingir uma meta.
+<p align="center">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0--rc1-0F766E?style=flat-square">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-2563EB?style=flat-square&logo=python&logoColor=white">
+  <img alt="Architecture" src="https://img.shields.io/badge/architecture-skill--first-7C3AED?style=flat-square">
+  <img alt="Production Core ICO" src="https://img.shields.io/badge/Core_A%2BB_ICO-95.96-16A34A?style=flat-square">
+  <img alt="License" src="https://img.shields.io/badge/license-CC_BY--SA_4.0-334155?style=flat-square">
+</p>
 
+<p align="center">
+  <a href="#visão-geral">Visão geral</a> ·
+  <a href="#arquitetura">Arquitetura</a> ·
+  <a href="#início-rápido">Início rápido</a> ·
+  <a href="#núcleo-matemático">Matemática</a> ·
+  <a href="#confiabilidade">Confiabilidade</a> ·
+  <a href="#documentação">Documentação</a>
+</p>
 
-## Componente principal: Agent Skill
+---
 
-A partir da v2.1, o principal componente do Revenue Agentic é a **Revenue Mechanics Agent Skill** em [`skills/revenue-mechanics/SKILL.md`](skills/revenue-mechanics/SKILL.md). Ela transforma o framework em uma capacidade reutilizável por agentes de IA: a IA interpreta o problema e escolhe o workflow, enquanto o motor Python determinístico executa os cálculos e aplica os gates de confiabilidade.
+> [!IMPORTANT]
+> **O modelo de linguagem interpreta; o motor Python calcula.** O agente entende a pergunta, seleciona o workflow e explica a decisão. Toda aritmética de produção passa pelo solver determinístico, pelos guardrails e pelos checks de consistência.
 
-**Arquitetura:**
+## Visão geral
 
-```text
-Usuário → Agent/LLM → Revenue Mechanics Skill → solver determinístico → engine matemático
-                                     ↓
-                         ICO + guards + consistência
+**Revenue Agentic** é um agente para decompor métricas, diagnosticar gargalos e transformar metas de receita em variáveis operacionais. Seu núcleo é a **Revenue Mechanics Agent Skill**, uma capacidade reutilizável que combina conhecimento procedural, equações auditáveis e código determinístico.
+
+A versão 2 substitui uma coleção de fórmulas isoladas por uma pequena **álgebra geradora**. Ela permite percorrer o sistema nos dois sentidos:
+
+| Diagnóstico | Planejamento reverso |
+| --- | --- |
+| Resultado → decomposição → gargalo → alavanca | Meta → variáveis necessárias → limites → plano |
+
+O princípio gerador do framework é:
+
+```math
+\boxed{\text{Resultado}=\text{Volume}\times\text{Probabilidades}\times\text{Valor}}
 ```
 
-A escolha por **skill-first** é deliberada: o conhecimento e o workflow precisam ser portáveis e composáveis; cálculos não devem depender do raciocínio probabilístico de um LLM. Um runner de agente é fornecido em [`agent/revenue_mechanics_agent.py`](agent/revenue_mechanics_agent.py) apenas como camada opcional de orquestração.
+### O que o produto resolve
 
-### Uso direto da skill
+- decomposição de aquisição paga, funis, CRO, ecommerce, B2B e receita recorrente;
+- cálculo reverso de metas, taxas mínimas e custos máximos admissíveis;
+- auditoria de métricas conflitantes com `Consistency Score` e tiers;
+- análise de eficiência marginal com proteção contra mudanças estruturais;
+- priorização de alavancas com confiabilidade e premissas explícitas;
+- execução JSON-in/JSON-out para agentes, automações e pipelines.
+
+## Arquitetura
+
+O design é **skill-first + motor determinístico + agente opcional**.
+
+```mermaid
+flowchart TB
+    U["Usuário"] --> A["Agent / LLM"]
+    A --> S["Revenue Mechanics Skill"]
+    S --> V["Solver determinístico"]
+    S --> G["ICO · Guardrails · Consistência"]
+    G --> V
+    V --> E["Motor matemático"]
+```
+
+| Camada | Responsabilidade | Implementação |
+| --- | --- | --- |
+| **Revenue Agentic** | Interpretar o problema e comunicar a decisão | [`agent/revenue_mechanics_agent.py`](agent/revenue_mechanics_agent.py) |
+| **Agent Skill** | Escolher workflow, exigir inputs e aplicar regras | [`skills/revenue-mechanics/SKILL.md`](skills/revenue-mechanics/SKILL.md) |
+| **Solver** | Receber JSON, calcular e devolver JSON auditável | [`revenue_solver.py`](skills/revenue-mechanics/scripts/revenue_solver.py) |
+| **Motor** | Executar identidades, guards e consistency checks | [`revenue_mechanics.py`](revenue_mechanics.py) |
+| **Confiabilidade** | Registrar ICO, tier e escopo permitido | [`reliability_registry.py`](reliability_registry.py) |
+
+Essa separação evita que cálculos dependam do raciocínio probabilístico do LLM. O agente é uma camada de orquestração; a skill e o código são a fonte operacional de verdade.
+
+## Início rápido
+
+### Requisitos
+
+- Python 3.10 ou superior;
+- nenhuma dependência externa para o núcleo determinístico;
+- `openai-agents>=0.14.0` somente para o runner opcional.
+
+### 1. Clone e valide
 
 ```bash
-python skills/revenue-mechanics/scripts/validate_skill.py
-python skills/revenue-mechanics/scripts/revenue_solver.py media-funnel --input skills/revenue-mechanics/assets/example_input.json
+git clone https://github.com/paulobonfa/revenue-agentic.git
+cd revenue-agentic
+python scripts/validate_production.py
 ```
 
-Veja [`skills/revenue-mechanics/references/WORKFLOWS.md`](skills/revenue-mechanics/references/WORKFLOWS.md) para os modos suportados.
+### 2. Execute o solver
 
-A decisão arquitetural e o benchmarking estão documentados em [`docs/AGENT_ARCHITECTURE.md`](docs/AGENT_ARCHITECTURE.md).
+```bash
+python skills/revenue-mechanics/scripts/revenue_solver.py \
+  media-funnel \
+  --input skills/revenue-mechanics/assets/example_input.json
+```
 
-## Princípio
+O resultado é devolvido em JSON com cálculo, classificação de confiabilidade, premissas e alertas aplicáveis.
 
-> **Resultado → decomposição → diagnóstico → alavanca → meta**
->
-> **Meta → variáveis necessárias → limites → plano**
+### Workflows disponíveis
 
-O núcleo prático pode ser resumido como:
+| Modo | Aplicação |
+| --- | --- |
+| `media-funnel` | Decompor mídia paga de orçamento/CPM até receita e CAC |
+| `reverse-funnel` | Calcular volume inicial ou conversão necessária para uma meta |
+| `cro-target` | Resolver crescimento por uma ou várias alavancas de conversão |
+| `ecommerce` | Decompor sessões, CVR, itens, preço e receita |
+| `b2b` | Traduzir meta de bookings em oportunidades, deals e pipeline |
+| `subscription` | Projetar base ativa, MRR e unit economics condicionais |
+| `scale` | Medir eficiência marginal entre períodos comparáveis |
+| `consistency` | Confrontar valores observados e derivados antes da análise |
 
-\[
-\boxed{Resultado = Volume \times Probabilidades \times Valor}
-\]
-
-## O que mudou na v2
-
-Foram removidos do core os modelos que não atingiram o gate de produção ou que exigiam sofisticação desproporcional ao ICP, incluindo a antiga curva logarítmica de saturação, o ARR triangular, `RC = T(1-churn)` e o LTV triangular.
-
-Entraram no lugar:
-
-- cadeia universal de funil;
-- cadeia universal de custo;
-- cadeia de valor econômico esperado;
-- Revenue/CRO solver reversível;
-- base ativa e MRR por estoque/fluxo;
-- MRR bridge, GRR e NRR;
-- eficiência marginal observada;
-- elasticidade-arco para intervalos discretos;
-- verificações automáticas de consistência dos dados;
-- classificação explícita de confiabilidade por família.
+Consulte exemplos completos em [`WORKFLOWS.md`](skills/revenue-mechanics/references/WORKFLOWS.md).
 
 ## Núcleo matemático
 
+As oito famílias abaixo formam a base geradora do sistema.
+
 ### 1. Fluxo
 
-\[
-N_{i+1}=N_i p_i
-\]
+Cada etapa recebe o volume anterior multiplicado pela probabilidade de avanço:
 
-\[
-N_n=N_0\prod_i p_i
-\]
+```math
+N_{i+1}=N_i\,p_i
+```
+
+Para uma cadeia completa de $n$ etapas:
+
+```math
+N_n=N_0\prod_{i=0}^{n-1}p_i
+```
 
 ### 2. Custo entre etapas
 
-\[
+O custo unitário cresce inversamente à taxa de passagem:
+
+```math
 c_{i+1}=\frac{c_i}{p_i}
-\]
+```
 
 ### 3. Valor econômico esperado
 
-\[
-V_i=p_iV_{i+1}
-\]
+O valor esperado de uma etapa é o valor posterior ponderado pela probabilidade de avanço:
+
+```math
+V_i=p_i\,V_{i+1}
+```
 
 ### 4. Receita transacional
 
-\[
-Revenue=Outcome\times AverageValue
-\]
+```math
+\operatorname{Revenue}=\operatorname{Outcome}\times\operatorname{AverageValue}
+```
 
 ### 5. Aquisição paga
 
-\[
-Impressions=\frac{1000\,Budget}{CPM}
-\]
+```math
+\operatorname{Impressions}=\frac{1000\times\operatorname{Budget}}{CPM}
+```
 
-### 6. Estado/estoque
+### 6. Estado ou estoque
 
-\[
-Stock_t=Stock_{t-1}+Inflows_t-Outflows_t
-\]
+```math
+\operatorname{Stock}_t=\operatorname{Stock}_{t-1}+\operatorname{Inflows}_t-\operatorname{Outflows}_t
+```
 
 ### 7. Crescimento multiplicativo
 
-\[
+```math
 \frac{Y_1}{Y_0}=\prod_i\left(\frac{x_{i,1}}{x_{i,0}}\right)^{a_i}
-\]
+```
 
 ### 8. Eficiência marginal observada
 
-\[
+```math
 mCost=\frac{\Delta Cost}{\Delta Outcome}
-\]
+```
+
+> [!CAUTION]
+> `mCost`, `mCAC` e `mROAS` só representam eficiência marginal de escala quando os períodos são operacionalmente comparáveis. O solver bloqueia essa interpretação se houver mudança estrutural declarada.
 
 ## Exemplo: de CPM até CAC
 
-\[
-CPC=\frac{CPM}{1000\,CTR}
-\]
+Considere $q=\mathrm{Sessions}/\mathrm{Clicks}$. A cadeia de custo pode ser decomposta assim:
 
-Se `q = Sessions/Clicks`:
+```math
+\begin{aligned}
+CPC &= \frac{CPM}{1000\times CTR} \\
+CPS &= \frac{CPC}{q} \\
+CPL &= \frac{CPS}{CVR_{S,L}} \\
+CAC_{\text{mídia}} &= \frac{CPL}{CVR_{L,C}}
+\end{aligned}
+```
 
-\[
-CPS=\frac{CPC}{q}
-\]
+Substituindo cada etapa pela anterior:
 
-Se `CVR_{S,L}=Leads/Sessions`:
+```math
+\boxed{
+CAC_{\text{mídia}}=
+\frac{CPM}
+{1000\times CTR\times q\times CVR_{S,L}\times CVR_{L,C}}
+}
+```
 
-\[
-CPL=\frac{CPS}{CVR_{S,L}}
-\]
+A mesma identidade pode ser invertida para encontrar **CPL máximo**, **CPC máximo**, **CPM máximo** ou a **conversão mínima** compatível com a economia final do negócio.
 
-Se `CVR_{L,C}=Customers/Leads`:
+## Confiabilidade
 
-\[
-CAC_{media}=\frac{CPL}{CVR_{L,C}}
-\]
+O **ICO — Índice de Confiabilidade Operacional** não representa probabilidade de acurácia futura. Ele governa o uso de cada família com base em validade matemática, robustez dos dados, validação externa, estabilidade das premissas e utilidade operacional.
 
-Logo:
+| Tier | Faixa | Uso permitido |
+| --- | ---: | --- |
+| **CORE_A** | ≥ 95 | Identidade e diagnóstico liberados para produção |
+| **CORE_B** | 90–94,99 | Planejamento condicionado com premissas explícitas |
+| **CONDITIONAL** | 80–89,99 | Uso restrito, com avisos e escopo declarado |
+| **EXPERIMENTAL** | < 80 | Fora do produto principal |
 
-\[
-\boxed{CAC_{media}=\frac{CPM}{1000\,CTR\,q\,CVR_{S,L}\,CVR_{L,C}}}
-\]
+### Gate atual
 
-A mesma cadeia pode ser invertida para calcular o **CPL máximo**, **CPC máximo**, **CPM máximo** ou uma **conversão mínima** compatível com a economia final do negócio.
+| Verificação | Resultado |
+| --- | ---: |
+| Testes automatizados | **36/36** |
+| Workflows do solver | **8/8** |
+| Stress test | **20.000 cenários** |
+| Erro máximo entre identidades | **5,615 × 10⁻¹⁶** |
+| ICO — Core A | **98,18/100** |
+| ICO — Core A+B | **95,96/100** |
+| Production gate local | **PASS** |
 
-## Confiabilidade e uso
-
-O ICO (Índice de Confiabilidade Operacional) **não é uma probabilidade estatística**. Ele é uma governança de produção baseada em cinco critérios: validade matemática, robustez dos dados, validação externa, estabilidade das premissas e utilidade para o ICP.
-
-- **CORE_A (≥95):** identidade/diagnóstico, liberado para produção.
-- **CORE_B (90–94,99):** planejamento condicionado, liberado com premissas explícitas.
-- **CONDITIONAL (80–89,99):** disponível apenas com avisos e escopo.
-- **EXPERIMENTAL (<80):** não entra no produto principal.
-
-Veja [`docs/VALIDATION_REPORT.md`](docs/VALIDATION_REPORT.md) e [`docs/MATHEMATICAL_SPEC.md`](docs/MATHEMATICAL_SPEC.md).
-
-## Validação automatizada
+Execute o mesmo gate a qualquer momento:
 
 ```bash
 python scripts/validate_production.py
 ```
 
-O comando valida primeiro a estrutura da Agent Skill e depois executa a suíte matemática, os workflows JSON-in/JSON-out, os guards e o stress test. O mesmo gate roda automaticamente no GitHub Actions em Python 3.10, 3.11 e 3.12.
+## O que mudou na v2
 
-O gate executa:
+Foram removidos do core os modelos que não atingiram o gate de produção ou exigiam sofisticação desproporcional ao ICP, incluindo a antiga curva logarítmica de saturação, ARR triangular, `RC = T × (1 − churn)` e LTV triangular.
 
-1. testes determinísticos sintéticos;
-2. fixtures de comunidade;
-3. cases públicos;
-4. testes round-trip das variações algébricas;
-5. stress test aleatório de 20.000 cenários;
-6. gate mínimo de confiabilidade do core.
+Entraram no lugar:
+
+- cadeia universal de fluxo, custo e valor econômico esperado;
+- Revenue/CRO solver reversível;
+- base ativa e MRR modelados como estado/fluxo;
+- MRR bridge, GRR e NRR;
+- elasticidade-arco para intervalos discretos;
+- consistência automática entre métricas;
+- classificação de confiabilidade por família.
+
+## Documentação
+
+| Documento | Conteúdo |
+| --- | --- |
+| [`SKILL.md`](skills/revenue-mechanics/SKILL.md) | Contrato operacional da Agent Skill |
+| [`AGENT_ARCHITECTURE.md`](docs/AGENT_ARCHITECTURE.md) | Benchmarking e decisão arquitetural |
+| [`MATHEMATICAL_SPEC.md`](docs/MATHEMATICAL_SPEC.md) | Especificação matemática completa |
+| [`VALIDATION_REPORT.md`](docs/VALIDATION_REPORT.md) | Evidências, confrontos e limites |
+| [`PRODUCTION_GATES.md`](docs/PRODUCTION_GATES.md) | Critérios de aprovação para produção |
+| [`GUARDRAILS.md`](skills/revenue-mechanics/references/GUARDRAILS.md) | Proteções contra interpretações inválidas |
+| [`CHANGELOG.md`](CHANGELOG.md) | Histórico de mudanças |
 
 ## Escopo deliberado
 
-Este projeto **não tenta substituir MMM, modelos bayesianos, causal inference ou forecasting financeiro avançado**. Eles podem ser apropriados em operações maiores, mas não são necessários para a maioria das decisões do ICP do framework.
+Revenue Agentic não tenta substituir MMM, modelos bayesianos, inferência causal ou forecasting financeiro avançado. Essas abordagens podem ser apropriadas em operações maiores, mas não são necessárias para a maioria das decisões do ICP do framework.
 
-A regra é parcimônia: **complexidade só entra quando reduz materialmente o erro da decisão.**
+> **Regra de parcimônia:** complexidade só entra quando reduz materialmente o erro da decisão.
+
+## Licença
+
+Distribuído sob a licença [Creative Commons Attribution-ShareAlike 4.0](LICENSE.txt).
+
+---
+
+<p align="center">
+  <strong>Revenue Agentic</strong> · decisões explicáveis, matemática auditável.
+</p>
