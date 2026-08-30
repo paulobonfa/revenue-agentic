@@ -1,0 +1,8 @@
+{
+  "budget": 12000,
+  "cpm": 40,
+  "ctr": 0.02,
+  "session_realization_rate": 0.92,
+  "downstream_rates": [0.07, 0.18],
+  "average_value": 650
+}
