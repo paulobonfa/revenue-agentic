@@ -1,0 +1,11 @@
+name: Conted Runner Test
+on:
+  push:
+    branches:
+      - tmp/conted-cnpj-runner-test
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test
+        run: echo ok
