@@ -32,7 +32,7 @@
 
 ## Visão geral
 
-**Revenue Agentic** é um agente para decompor métricas, diagnosticar gargalos e transformar metas de receita em variáveis operacionais. Seu núcleo é a **Revenue Mechanics Agent Skill**, uma capacidade reutilizável que combina conhecimento procedural, equações auditáveis e código determinístico.
+**Revenue Agentic** é um agente para decompor métricas, diagnosticar gargalos, transformar metas de receita em variáveis operacionais e tomar decisões de escala com incerteza explícita. O produto agora combina duas Agent Skills: **Revenue Mechanics**, para economia e decomposição do sistema, e **Revenue Decision Science**, para avaliar a força estatística de decisões como escalar, manter, otimizar, reduzir ou pausar.
 
 A versão 2 substitui uma coleção de fórmulas isoladas por uma pequena **álgebra geradora**. Ela permite percorrer o sistema nos dois sentidos:
 
@@ -53,7 +53,8 @@ O princípio gerador do framework é:
 - auditoria de métricas conflitantes com `Consistency Score` e tiers;
 - análise de eficiência marginal com proteção contra mudanças estruturais;
 - priorização de alavancas com confiabilidade e premissas explícitas;
-- execução JSON-in/JSON-out para agentes, automações e pipelines.
+- execução JSON-in/JSON-out para agentes, automações e pipelines;
+- decisão estatística de escala/pausa com Poisson, nível de significância, desvio padrão, erro relativo e maturidade de conversão.
 
 ## Arquitetura
 
@@ -62,18 +63,23 @@ O design é **skill-first + motor determinístico + agente opcional**.
 ```mermaid
 flowchart TB
     U["Usuário"] --> A["Agent / LLM"]
-    A --> S["Revenue Mechanics Skill"]
-    S --> V["Solver determinístico"]
-    S --> G["ICO · Guardrails · Consistência"]
-    G --> V
-    V --> E["Motor matemático"]
+    A --> RM["Revenue Mechanics Skill"]
+    A --> DS["Revenue Decision Science Skill"]
+    RM --> RV["Revenue Mechanics Solver"]
+    DS --> DV["Decision Science Solver"]
+    RM --> G["ICO · Guardrails · Consistência"]
+    G --> RV
+    RV --> E["Motor matemático"]
+    DV --> D["Escala · Hold · Otimiza · Pausa"]
 ```
 
 | Camada | Responsabilidade | Implementação |
 | --- | --- | --- |
 | **Revenue Agentic** | Interpretar o problema e comunicar a decisão | [`agent/revenue_mechanics_agent.py`](agent/revenue_mechanics_agent.py) |
-| **Agent Skill** | Escolher workflow, exigir inputs e aplicar regras | [`skills/revenue-mechanics/SKILL.md`](skills/revenue-mechanics/SKILL.md) |
-| **Solver** | Receber JSON, calcular e devolver JSON auditável | [`revenue_solver.py`](skills/revenue-mechanics/scripts/revenue_solver.py) |
+| **Revenue Mechanics Skill** | Definir economia, targets, decomposição e consistência | [`skills/revenue-mechanics/SKILL.md`](skills/revenue-mechanics/SKILL.md) |
+| **Decision Science Skill** | Avaliar evidência estatística para escala/hold/pausa | [`skills/revenue-decision-science/SKILL.md`](skills/revenue-decision-science/SKILL.md) |
+| **Revenue Solver** | Receber JSON, calcular e devolver JSON auditável | [`revenue_solver.py`](skills/revenue-mechanics/scripts/revenue_solver.py) |
+| **Decision Solver** | Calcular incerteza, caudas Poisson e decisão operacional | [`decision_solver.py`](skills/revenue-decision-science/scripts/decision_solver.py) |
 | **Motor** | Executar identidades, guards e consistency checks | [`revenue_mechanics.py`](revenue_mechanics.py) |
 | **Confiabilidade** | Registrar ICO, tier e escopo permitido | [`reliability_registry.py`](reliability_registry.py) |
 
@@ -119,6 +125,29 @@ O resultado é devolvido em JSON com cálculo, classificação de confiabilidade
 | `consistency` | Confrontar valores observados e derivados antes da análise |
 
 Consulte exemplos completos em [`WORKFLOWS.md`](skills/revenue-mechanics/references/WORKFLOWS.md).
+
+### Revenue Decision Science
+
+Para perguntas como **"eu escalo essa campanha?", "esse CPA já é confiável?" ou "já existe evidência suficiente para pausar?"**, use o solver estatístico:
+
+```bash
+python skills/revenue-decision-science/scripts/decision_solver.py \
+  --json '{"spend":2200,"conversions":0,"target_cpa":500,"maturity_ratio":1.0}'
+```
+
+A lógica padrão usa um modelo Poisson para eventos por exposição de gasto, com `alpha = 0,05`, maturidade mínima para decisões duras e uma régua explícita entre `WAIT_FOR_MATURITY`, `TEST_INCREMENT`, `SCALE_GRADUALLY`, `HOLD_AND_OPTIMIZE` e `PAUSE_OR_REDUCE`.
+
+A sequência recomendada é:
+
+```text
+Revenue Mechanics define o target econômico
+        ↓
+Revenue Decision Science mede a força da evidência
+        ↓
+Agente traduz em decisão operacional
+```
+
+Exemplo: com CPA-alvo de `R$ 500`, gastar `R$ 2.200` sem nenhuma conversão madura implica `4,4×` o CPA-alvo. Sob a hipótese de que o CPA verdadeiro seja `R$ 500`, a chance de observar zero conversões é `e^-4,4 ≈ 1,23%`, o que sustenta um corte/redução em uma política unilateral de 5%.
 
 ## Aula completa: Revenue Mechanics do zero
 
@@ -858,7 +887,9 @@ Entraram no lugar:
 
 | Documento | Conteúdo |
 | --- | --- |
-| [`SKILL.md`](skills/revenue-mechanics/SKILL.md) | Contrato operacional da Agent Skill |
+| [`Revenue Mechanics SKILL.md`](skills/revenue-mechanics/SKILL.md) | Contrato operacional da skill econômica |
+| [`Revenue Decision Science SKILL.md`](skills/revenue-decision-science/SKILL.md) | Contrato operacional da skill estatística |
+| [`STATISTICAL_RULES.md`](skills/revenue-decision-science/references/STATISTICAL_RULES.md) | Regras de Poisson, significância, RSE e stop-loss |
 | [`AGENT_ARCHITECTURE.md`](docs/AGENT_ARCHITECTURE.md) | Benchmarking e decisão arquitetural |
 | [`MATHEMATICAL_SPEC.md`](docs/MATHEMATICAL_SPEC.md) | Especificação matemática completa |
 | [`VALIDATION_REPORT.md`](docs/VALIDATION_REPORT.md) | Evidências, confrontos e limites |

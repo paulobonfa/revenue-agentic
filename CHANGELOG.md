@@ -1,5 +1,16 @@
 # Changelog — Equações Bonfarianas
 
+## [Unreleased]
+
+### Adicionado
+- **Revenue Decision Science Agent Skill** para decisões de escala, hold, otimização, redução e pausa com incerteza explícita.
+- Solver determinístico baseado em Poisson para comparar performance observada com CPA-alvo.
+- Cálculo de probabilidade de cauda, desvio padrão do count esperado, erro padrão relativo e regra de zero conversões.
+- Guard de maturidade para impedir cortes prematuros quando conversões/aprovações ainda estão em lag.
+- Régua operacional com `WAIT_FOR_MATURITY`, `TEST_INCREMENT`, `SCALE_GRADUALLY`, `HOLD_AND_OPTIMIZE` e `PAUSE_OR_REDUCE`.
+- Integração da skill estatística ao runner do Revenue Agentic.
+- Testes cobrindo os cenários de criativo com CPA aparentemente bom mas amostra pequena, e gasto de 4,4× CPA-alvo sem conversões.
+
 ## [2.0.0-rc1] - 2026-08-29
 
 ### Reestruturado
